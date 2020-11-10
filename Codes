@@ -1,0 +1,871 @@
+DEFAULT USERNAME: admin123def PASSWORD: admin
+//DATABASE PHP [UPDATED: 10/11/2020 | 9:37 AM] , integrated DBFile and changed something in delete for employees
+<?php 
+	session_start();
+	$id = "";
+	$uname = "";
+	$password = "";
+	$result = "";
+	$row = "";
+	$firstname = "";
+	$lastname = "";
+	$middleinitial = "";
+	$rank = "";
+	$update = "";
+	$supplier_id = "";
+	$email = "";
+	$address = "";
+  $SKU = "";
+  $reorderPoints = "";
+  $prodName = "";
+  $location = "";
+  $price = "";
+  $type = "";
+	$_SESSION['showdatactr'] = 1;
+
+class db {
+
+	public $connection;
+
+	public function __construct(){
+		
+		$this -> connection = mysqli_connect("localhost","root","","QUEINV_DB");
+
+		if(mysqli_connect_error()){
+			die("Failed to connect to the database!");
+		}
+		else{
+		}
+
+	}
+
+function update(){
+
+	$id = $_POST['id'];
+	$firstname = $_POST['firstname'];
+	$lastname = $_POST['lastname'];
+	$middleinitial = $_POST["mi"];
+    $uname = $_POST["username"];
+    $password = $_POST["password"];
+    $rank = $_POST["rank"];
+
+    $aVar = mysqli_connect("localhost","root","","QUEINV_DB");
+    $result = mysqli_query($aVar, "SELECT username, emp_id FROM Employees WHERE username='$uname'");
+    $row = mysqli_fetch_array($result);
+if($row==0 || ($row["username"]==$uname&&$row['emp_id']==$id)){
+    if($rank==1){
+    	$rank = "RegUser";
+    }else{
+    	$rank = "Admin";
+    }
+    
+    $sql = "UPDATE Employees SET firstname = '$firstname', lastname='$lastname', middleinitial='$middleinitial', username='$uname', password='$password', rank='$rank' WHERE emp_id = '$id'";
+    $query = mysqli_query($this->connection,$sql) or die(mysqli_error($this->connection));
+    header("location: ProjectEMPCRUD.php");
+
+    if($query){
+    	echo "SUCCESS!";
+    }else{
+    	echo "FAILED!";
+    }
+}else if($row["username"]==$uname){
+    echo "Duplication Found. Username already exists";
+}
+    
+}
+  
+function updateSupplier(){
+	$supplier_id = $_POST['id'];
+	$email = $_POST['email'];
+	$address = $_POST['address'];
+
+    $aVar = mysqli_connect("localhost","root","","QUEINV_DB");
+    $result = mysqli_query($aVar, "SELECT email, supplier_id FROM SUPPLIER WHERE email='$email'");
+    $row = mysqli_fetch_array($result);
+if($row==0 || ($supplier_id == $row['supplier_id'])){
+    $sql = "UPDATE SUPPLIER SET email = '$email', address='$address' WHERE supplier_id = '$supplier_id'";
+    $query = mysqli_query($this->connection,$sql) or die(mysqli_error($this->connection));
+    header("location: ProjectSupplierCRUD.php");
+
+    if($query){
+    	echo "SUCCESS!";
+    }else{
+    	echo "FAILED!";
+    }
+}else if($row["email"]==$email){
+    echo "Duplication Found. Username already exists";
+}
+    
+}
+
+
+function login_form($uname, $password){	
+
+$_SESSION['name'] = $_POST["username"];
+$_SESSION['pass'] = $_POST["password"];
+$uname = $_SESSION['name'];
+$password = $_SESSION['pass'];
+
+// Connect to the database
+$aVar = mysqli_connect("localhost","root","","QUEINV_DB");
+
+$result = mysqli_query($aVar, "SELECT username, password FROM Employees WHERE username='$uname' AND password='$password'");
+
+if($result){
+    
+}else{
+    die(mysqli_error($aVar));
+}
+
+$row = mysqli_fetch_array($result);
+
+if($row==0){
+    echo "Sorry, your credentials are not valid, Please try again.";
+}
+else if($row["username"]==$uname && $row["password"]==$password){
+	header("location: ProjectLandingPage.php");
+    echo "You are a validated user.";
+}
+}
+
+function AddEmployee($firstname, $lastname, $middleinitial, $rank, $username, $password){
+
+$firstname = $_POST["firstname"];
+$lastname = $_POST["lastname"];
+$middleinitial = $_POST["mi"];
+$rank = $_POST["rank"];
+$uname = $_POST["username"];
+$password = $_POST["password"];
+
+$aVar = mysqli_connect("localhost","root","","QUEINV_DB");
+
+$result = mysqli_query($aVar, "SELECT username, password FROM Employees WHERE username='$uname'");
+
+if($result){
+    
+}else{
+    die(mysqli_error($aVar));
+}
+
+$row = mysqli_fetch_array($result);
+
+if($row==0){
+	    if($rank == 1){
+    	$sql = "INSERT INTO Employees (firstname, lastname, middleinitial, rank, username, password, last_login)
+		VALUES ('$firstname', '$lastname', '$middleinitial', 'RegUser', '$uname', '$password', 0);";
+		$query = mysqli_query($this->connection,$sql) or die(mysqli_error($this->connection));
+		mysqli_query($this->connection,"CREATE USER '$username'@'localhost' IDENTIFIED BY '$password'");
+		mysqli_query($this->connection,"GRANT SELECT, INSERT, UPDATE ON QUEINV_DB.SUPPLIER TO '$username'@'localhost'");
+		mysqli_query($this->connection,"GRANT SELECT, INSERT, UPDATE ON QUEINV_DB.CustomerDetails TO '$username'@'localhost'");
+		mysqli_query($this->connection,"GRANT SELECT, INSERT, UPDATE ON QUEINV_DB.Product TO '$username'@'localhost'");
+		mysqli_query($this->connection,"GRANT SELECT, INSERT, UPDATE ON QUEINV_DB.PO TO '$username'@'localhost'");
+		mysqli_query($this->connection,"GRANT SELECT, INSERT, UPDATE ON QUEINV_DB.OrderDetails TO '$username'@'localhost'");
+		mysqli_query($this->connection,"GRANT SELECT, INSERT, UPDATE ON QUEINV_DB.FOOD_CATALOGUE TO '$username'@'localhost'");
+		mysqli_query($this->connection,"GRANT SELECT, INSERT, UPDATE ON QUEINV_DB.warehouse TO '$username'@'localhost'");
+
+    }else{
+    	$sql = "INSERT INTO Employees (firstname, lastname, middleinitial, rank, username, password, last_login)
+		VALUES ('$firstname', '$lastname', '$middleinitial', 'Admin', '$uname', '$password', 0);";
+		$query = mysqli_query($this->connection,$sql) or die(mysqli_error($this->connection));
+		"CREATE USER '$username'@'localhost' IDENTIFIED BY '$password'";
+		"GRANT ALL PRIVILEGES ON QUEINV_DB.* TO '$username'@'localhost'";
+    }
+}
+else if($row["username"]==$uname){
+    echo "Duplication Found. Username already exists";
+}
+
+}
+
+function AddSupplier($email, $address){
+
+$email = $_POST["email"];
+$address = $_POST["address"];
+
+$aVar = mysqli_connect("localhost","root","","QUEINV_DB");
+
+$result = mysqli_query($aVar, "SELECT email FROM supplier WHERE email='$email'");
+
+if($result){
+    
+}else{
+    die(mysqli_error($aVar));
+}
+
+$row = mysqli_fetch_array($result);
+
+if($row==0){
+    	$sql = "INSERT INTO SUPPLIER (email, address)
+		VALUES ('$email', '$address');";
+		$query = mysqli_query($this->connection,$sql) or die(mysqli_error($this->connection));	
+}
+else if($row["email"]==$email){
+    echo "Duplication Found. email already registered";
+}
+
+}  
+  
+function show_data($table){
+		$x = $_SESSION['showdatactr'];
+
+		$sql = "SELECT * FROM $table";
+		$result = mysqli_query($this->connection,$sql);
+		if($result){
+			return $result;
+		}
+}
+}
+
+
+
+$db = new mysqli("localhost","root","","QUEINV_DB") or die(myqli_error($db));
+
+	if(isset($_GET["delete"])){
+	
+	$id = $_GET["delete"];
+	$sql = "DELETE FROM Employees WHERE emp_id = $id";
+	$db->query($sql) or die($db->error());
+		header("location: ProjectEMPCRUD.php");
+}
+
+  
+if(isset($_GET["deleteSupp"])){
+	
+	$supplier_id = $_GET["deleteSupp"];
+	$sql = "DELETE FROM SUPPLIER WHERE supplier_id = $supplier_id";
+	$db->query($sql) or die($db->error());
+		header("location: ProjectSupplierCRUD.php");
+}
+
+function AddProduct($SKU, $reorderPoints, $prodName, $location,$price,$type){
+  
+$SKU = $_POST["SKU"];
+$reorderPoints = $_POST["reorderPoints"];
+$prodName = $_POST["prodName"];
+$location = $_POST["location"];
+$price = $_POST["price"];
+$type = $_POST["type"];
+
+
+$aVar = mysqli_connect("localhost","root","","QUEINV_DB");
+
+$result = mysqli_query($aVar, "SELECT name,product_SKU FROM product WHERE name='$prodName'");
+
+if($result){
+    
+}else{
+    die(mysqli_error($aVar));
+}
+
+$row = mysqli_fetch_array($result);
+//if($row==0 || ($row["name"]==$prodName&&$row["product_SKU"]==$SKU)){} FOR UPDATE FUNCTION, add the p_id property of Product for comparisona s well
+if($row==0){
+	    echo "SUCCESS!";
+    	$sql = "INSERT INTO product (product_SKU,reorder_points,location,name,price,product_type)
+		VALUES ('$SKU','$reorderPoints','$location','$prodName','$price','$type');";
+		$query = mysqli_query($this->connection,$sql) or die(mysqli_error($this->connection));
+
+}
+else{
+    echo "Duplication Found. ProductName/SKUCode already exists";
+}
+
+}
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//HTML LOGIN
+<!doctype html>
+
+<?php include "ProjectDBFile.php"?>
+
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" type="text/css" href="ProjectCSSFile.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <title>Hello, world!</title>
+  </head>
+  <body>
+
+    <div class="logon-container">
+    <form method = "post" action = "">
+      <label for="Username">Username</label>
+      <input type="text" value="username" name="username" class="logon-texts" required>
+      <br>
+      <label for="Password">Password</label>
+      <input type="password" value="password" name="password" class="logon-texts" required>
+      <br>
+      <button type="submit" name="login" class="login-button">LOGIN</button>
+   </form>
+ </div>
+
+    <?php 
+        $mydb = new db();
+        if(isset($_POST["login"])){
+       $mydb->login_form($uname, $password);
+      }
+    ?>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  </body>
+</html>
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//Main Page
+<!doctype html>
+
+<?php include "Loginn.php"?>
+
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="stylesheet" type="text/css" href="webcss.css">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <title>Hello, world!</title>
+  </head>
+  <body>
+
+  <nav class="navbar navbar-expand-md navbar-light bg-light">
+    <a class="navbar-brand" href="#">QUEsystems</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item active">
+                <a class="nav-link" href="#">Main <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Supplier</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Customer</a>
+            </li>
+        
+            <li class="nav-item">
+                <a class="nav-link" href="#">Employee</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">PO</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">DO</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Report</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="MainLogin.php" name="LogOut">LogOut</a>
+            </li>
+
+          </ul>
+
+    </div>
+</nav>
+  <?php
+    //if(isset(var)){}
+
+  ?>
+
+
+  <div class="m-3 ">
+    <nav class="navbar navbar-expand-lg navbar-light bg-transparent">
+      <h4>List of Products</h4>
+      <div class="ml-auto" id="navbarNav">
+
+      <div class="mr-5">
+      <a href="" class="btn btn-success" data-toggle="modal" data-target="#exampleModalCenter">add</a>
+      <a href="" class="btn btn-danger">delete</a>
+      </div>
+      </div>
+
+    </nav>
+    <?php
+    $mydb = new db();
+        if(isset($_POST["add"])){
+          echo $_POST["type"];
+       $mydb->AddProduct($_POST["SKU"], $_POST["reorderPoints"],$_POST["prodName"], $_POST["location"],$_POST["price"],$_POST["type"]);
+       $result = $mydb->show_data("product"); 
+    }
+  ?>
+   
+    
+    
+    <div class="prod-list">
+
+      <?php while ($data = mysqli_fetch_assoc($result)) {
+        ?>
+        <tr>
+        <td> <?php 
+                  echo "<div class='gallery'>";
+                  echo "<a target='' href=''>".$data["name"]."</a>";
+                  echo "<div class='desc'>";
+         ?></td>
+        <td> <?php echo $data["product_SKU"];?></td>
+        <td> <?php echo $data["reorder_points"];?></td>
+        <td> <?php echo $data["location"];?></td>
+        <td> <?php echo $data["price"];?></td>
+        <td> <?php echo $data["product_type"];
+                   echo "</div>";
+                  echo "</div>";
+        ?></td>
+        </tr>
+   <?php } ?>
+
+      <div class="gallery">
+         <a target="_blank" href="img_5terre.jpg">test
+       </a>
+      <div class="desc">Add a description of the image here</div>
+      </div>
+      
+      <div class="gallery">
+        <a target="_blank" href="img_forest.jpg">test</a>
+      <div class="desc">Add a description of the image here</div>
+      </div>
+
+      <div class="gallery">
+        <a target="_blank" href="img_lights.jpg">test
+        </a>
+      <div class="desc">Add a description of the image here</div>
+      </div>
+
+      <div class="gallery">
+        <a target="_blank" href="img_mountains.jpg">test</a>
+      <div class="desc">Add a description of the image here</div>
+      </div>
+
+      <div class="gallery">
+        <a target="_blank" href="img_lights.jpg">test
+        </a>
+      <div class="desc">Add a description of the image here</div>
+      </div>
+
+      <div class="gallery">
+        <a target="_blank" href="img_mountains.jpg">test   </a>
+      <div class="desc">Add a description of the image here</div>
+      </div>
+
+      <div class="gallery">
+        <a target="_blank" href="img_lights.jpg">test
+        </a>
+      <div class="desc">Add a description of the image here</div>
+      </div>
+
+      <div class="gallery">
+        <a target="_blank" href="img_lights.jpg">test
+        </a>
+      <div class="desc">Add a description of the image here</div>
+      </div>
+
+      <div class="gallery">
+        <a target="_blank" href="img_lights.jpg">test
+        </a>
+      <div class="desc">Add a description of the image here</div>
+      </div>
+
+    </div>
+
+   
+  </div>
+
+  <!-- Button trigger modal -->
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title text-dark" id="exampleModalLongTitle">Add Product</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+
+        
+        <form method = "post" action = "">
+
+          <label for="Username" class="col-form-label">Product SKU</label>
+          <input type="text" placeholder="SKU" name="SKU" class="form-control logon-texts" required>
+          <br>
+
+          <label for="Reorder Point">Reorder Points</label>
+          <input type="text" placeholder="reorderPoints" name="reorderPoints" class="form-control logon-texts" required>
+          <br>
+          <label for="Product Name">Product Name</label>
+          <input type="text" placeholder="prodName" name="prodName" class="form-control logon-texts" required>
+          <br>
+          <label for="Location">Location</label>
+          <input type="text" placeholder="location" name="location" class="form-control logon-texts" required>
+          <br>
+          <label for="Price">Price</label>
+          <input type="text" placeholder="price" name="price" class="form-control logon-texts" required>
+          <br>
+          <label for="Type">Type</label>
+          <select name="type" class="form-control" required>
+            <option value="food">Food</option>
+            <option value="non-food">Non-Food</option>
+          </select>
+          <br>
+      
+        <button type="submit" name="add" class="btn btn-success float-right">Add</button>
+
+        
+      </form>
+      </div>
+    </div>
+  </div>
+</div>
+  
+  
+
+  <script src='modal.js'></script>
+  <script src='modal.js'></script>
+  <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  
+  </body>
+</html>
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//Gamay nga CSS
+.prod-list{
+	display: grid;
+	height: 100%;
+  margin: 50px 25px;
+  padding: 5px 100px;
+  display: grid;
+  grid-gap: 10%;
+  grid-auto-rows: 100px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.gallery{
+
+	padding: 10%;
+
+}
+
+.listlabel{
+	display:flex;
+	align-items: 
+} 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//DATABASE [UPDATED: 09/11/2020 | 12:04 AM] , changed primary key and changed product SKU to unique key for error trapping duplicates
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET AUTOCOMMIT = 0;
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+CREATE DATABASE QUEINV_DB;
+
+USE QUEINV_DB;
+
+CREATE TABLE Product(
+  p_id int NOT NULL,
+  product_SKU varchar(20) NOT NULL,
+  reorder_points int NOT NULL,
+  product_qty int NOT NULL,
+  sold_qty int NOT NULL,
+  waste_qty int NOT NULL,
+  location varchar(40) NOT NULL,
+  last_updated DATE not NULL,
+  name varchar(30) NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  product_type ENUM('food', 'non-food'),
+  PRIMARY KEY (p_id),
+  UNIQUE (product_sku)
+);
+
+ALTER TABLE `Product`
+  MODIFY `p_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+COMMIT;
+
+CREATE TABLE CustomerDetails(
+  customer_id int NOT NULL,
+  first_name varchar(20) NOT NULL,
+  mi varchar(2) NOT NULL,
+  last_name varchar(20) NOT NULL,
+  address varchar(40) NOT NULL,
+  PRIMARY KEY (customer_id)
+);
+
+CREATE TABLE Employees(
+  emp_id int NOT NULL,
+  firstname varchar(20) NOT NULL,
+  lastname varchar(20) NOT NULL,
+  middleinitial varchar(2) NOT NULL, 
+  rank varchar(20) NOT NULL,
+  username varchar(30) NOT NULL,
+  password varchar(30) NOT NULL,
+  last_login DATE NOT NULL,
+  PRIMARY KEY (emp_id)
+);
+
+ALTER TABLE `Employees`
+  MODIFY `emp_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+
+INSERT INTO Employees (firstname, lastname, middleinitial, rank, username, password, last_login)
+VALUES ('Apple', 'Juice', 'L.', 'admin', 'admin123def', 'admin', 0);
+
+CREATE TABLE SUPPLIER(
+  supplier_id int NOT NULL,
+  email varchar(40) not NULL,
+  address varchar(40) NOT NULL,
+  PRIMARY KEY (supplier_id)
+);
+
+CREATE TABLE PO(
+  purchaseorder_ref int NOT NULL,
+  supplier_id int NOT NULL,
+  eta DATE NOT NULL,
+  etd DATE NOT NULL,
+  qty int NOT NULL,
+  paymentmethod ENUM('cash','card') NOT NULL,
+  totalprice DECIMAL(10,2),
+  date_fulfilled DATE ,
+  purchaseorder_status ENUM('pending','complete','cancelled') Default 'pending',
+  product_SKU varchar(20) NOT NULL,
+  CONSTRAINT FK_SKU_PO FOREIGN KEY (product_sku) REFERENCES Product(product_SKU),
+  CONSTRAINT FK_SUP FOREIGN KEY (supplier_id) REFERENCES SUPPLIER(supplier_id),
+  PRIMARY KEY (purchaseorder_ref)
+);
+
+CREATE TABLE FOOD_CATALOGUE(
+  fc_id int NOT NULL,
+  batch_num varchar(15) NOT NULL,
+  product_SKU varchar(20) NOT NULL,
+  date_in DATE NOT NULL,
+  qty int NOT NULL,
+  expiry_date DATE NOT NULL,
+  CONSTRAINT FK_SKU_FC FOREIGN KEY (product_sku) REFERENCES Product(product_SKU),
+  PRIMARY KEY (fc_id)
+);
+
+ALTER TABLE `FOOD_CATALOGUE`
+  MODIFY `fc_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+
+CREATE TABLE OrderDetails(
+  delivery_ref int NOT NULL,
+  customer_id int NOT NULL,
+  product_SKU varchar(20) NOT NULL,
+  qty int NOT NULL,
+  totalprice DECIMAL(10,2) NOT NULL,
+  order_status ENUM('not delivered', 'delivered') NOT NULL,
+  VAT DECIMAL (10,2) NOT NULL,
+  paymentmethod ENUM('cash','card') NOT NULL,
+  CONSTRAINT FK_SKU FOREIGN KEY (customer_id) REFERENCES CustomerDetails(customer_id),
+  CONSTRAINT FK_SKU_OD FOREIGN KEY (product_sku) REFERENCES Product(product_SKU),
+  PRIMARY KEY (delivery_ref)
+);
+
+CREATE TABLE warehouse(
+  warehouse_id int NOT NULL,
+  product_SKU varchar(20) NOT NULL,
+  CONSTRAINT FK_SKU_WA FOREIGN KEY (product_sku) REFERENCES Product(product_SKU),
+  PRIMARY KEY (warehouse_id)
+);
+
+ALTER TABLE `warehouse`
+  MODIFY `warehouse_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//CSS
+.logon-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -moz-transform: translateX(-50%) translateY(-50%);
+  -webkit-transform: translateX(-50%) translateY(-50%);
+  transform: translateX(-50%) translateY(-50%);
+}
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  //ADD EMPLOYEE FORM *DISPLAY EMPLOYEES AT THE TOP, THIS FORM AT THE BOTTOM
+  <!doctype html>
+
+<?php include "ProjectDBFile.php"?>
+
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <title>Hello, world!</title>
+  </head>
+  <body>
+
+    <div class="logon-container">
+    <form method = "post" action = "">
+      <label for="Username">Username</label>
+      <input type="text" value="username" name="username" class="logon-texts" required>
+      <br>
+      <label for="Password">Password</label>
+      <input type="password" value="password" name="password" class="logon-texts" required>
+      <br>
+      <label for="firstname">firstname</label>
+      <input type="text" value="firstname" name="firstname" class="logon-texts" required>
+      <br>
+      <label for="lastname">lastname</label>
+      <input type="text" value="lastname" name="lastname" class="logon-texts" required>
+      <br>
+      <label for="mi">mi</label>
+      <input type="text" value="mi" name="mi" class="logon-texts" required>
+      <br>
+      <label for="Password">Regular Access</label>
+      <input type="radio" value="1" name="rank" class="privChoice" required>
+      <label for="Password">Admin</label>
+      <input type="radio" value="2" name="rank" class="privChoice" required>
+      <br>
+      <button type="submit" name="login" class="login-button">LOGIN</button>
+   </form>
+ </div>
+
+    <?php 
+        $mydb = new db();
+        if(isset($_POST["login"])){
+       $mydb->AddEmployee($firstname, $lastname, $middleinitial, $rank, $uname, $password);
+      }
+    ?>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  </body>
+</html>
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//EMPLOYEE HTML/PHP PAGE
+<!doctype html>
+
+<?php include "ProjectDBFile.php"?>
+
+<?php
+//Displays current information of entry when attempting to update existing entry.
+if(isset($_GET["update"])){
+
+  $id = $_GET["update"];
+  $update = true;
+  $record = mysqli_query ($db, "SELECT * FROM Employees WHERE emp_id = $id");
+  $entryrow = $record->fetch_array();
+
+      $firstname = $entryrow["firstname"];
+      $lastname = $entryrow["lastname"];
+      $middleinitial = $entryrow["middleinitial"];
+      $uname = $entryrow["username"];
+      $password = $entryrow["password"];
+}
+?>
+
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <title>Hello, world!</title>
+  </head>
+  <body>
+
+    <?php $mydb = new db();
+          $table = "Employees";
+          $result = $mydb->show_data($table); 
+    ?>
+    
+    <?php while ($data = mysqli_fetch_assoc($result)) {
+        ?>
+        <tr>
+        <td> <?php echo $data["username"];?></td>
+        <td> <?php echo $data["firstname"];?></td>
+        <td> <?php echo $data["lastname"];?></td>
+        <td> <?php echo $data["middleinitial"];?></td>
+        <td> <?php echo $data["rank"];?></td>
+        <td><a href="ProjectEMPCRUD.php?update=<?php echo $data['emp_id']?>" class="btn btn-success">Update</a></td>
+        <td><a href="ProjectDBFile.php?delete=<?php echo $data['emp_id']?>" class="btn btn-warning">Delete</a></td>
+        </tr>
+   <?php } ?>
+
+    <div class="logon-container">
+    <form method = "post" action = "">
+      <input type="hidden" name="id" value="<?php echo $id; ?>">
+      <label for="Username">Username</label>
+      <input type="text" value="<?php echo $uname?>" name="username" class="logon-texts" placeholder ="" required>
+      <br>
+      <label for="Password">Password</label>
+      <input type="password" value="<?php echo $password?>" name="password" class="logon-texts" required>
+      <br>
+      <label for="firstname">firstname</label>
+      <input type="text" value="<?php echo $firstname?>" name="firstname" class="logon-texts" required>
+      <br>
+      <label for="lastname">lastname</label>
+      <input type="text" value="<?php echo $lastname?>" name="lastname" class="logon-texts" required>
+      <br>
+      <label for="mi">mi</label>
+      <input type="text" value="<?php echo $middleinitial?>" name="mi" class="logon-texts" required>
+      <br>
+      <label for="Password">Regular Access</label>
+      <input type="radio" value="1" name="rank" class="privChoice" required>
+      <label for="Password">Admin</label>
+      <input type="radio" value="2" name="rank" class="privChoice" required>
+      <br>
+
+    <?php if($update==true):
+      if (isset($_POST['update'])) {
+      $update == false;
+      header("location: ProjectEMPCRUD.php");
+    }
+    ?>
+
+      <button type="submit" name="change" class="btn btn-info">Update</button>
+      <?php else: ?>
+      <button type="submit" name="submit" class="submit-button">Submit</button>
+      <?php endif; ?>
+
+      <?php 
+        $mydb = new db();
+        if(isset($_POST["submit"])){
+       $mydb->AddEmployee($firstname, $lastname, $middleinitial, $rank, $uname, $password);
+       header("location: ProjectEMPCRUD.php");
+      }
+      ?>
+
+      <?php
+      if(isset($_POST["change"])){
+        $mydb = new db();
+        $mydb->update();
+      }
+      ?>
+
+   </form>
+ </div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  </body>
+</html>
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        
